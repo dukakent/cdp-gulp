@@ -61,15 +61,15 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	(function () {
+	  var button = $('[data-target="#myModal"]');
 
-	    var button = $('[data-target="#myModal"]');
+	  function onButtonClick() {
+	    console.log((0, _stringUpdater2.default)('I have a pen, ', 'push', 'I have an apple'));
+	  }
 
-	    button.click(onButtonClick);
-
-	    function onButtonClick(e) {
-	        console.log((0, _stringUpdater2.default)('I have a pen, ', 'push', 'I have an apple'));
-	    }
-	})();
+	  button.click(onButtonClick);
+	})(); /* global $ */
+	/* eslint-disable wrap-iife */
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ },
