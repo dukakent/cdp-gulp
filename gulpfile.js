@@ -16,6 +16,10 @@ var uglify = require('gulp-uglify');
 var mainBowerFiles = require('main-bower-files');
 var filter = require('gulp-filter');
 
+var webpack = require('webpack');
+var BowerWebpackPlugin = require("bower-webpack-plugin");
+var ExtractTextPlugin = require("extract-text-webpack-plugin");
+
 var argv = require('minimist')(process.argv.slice(2), {
     string: 'env',
     default: {env: process.env.NODE_ENV || 'development'}
@@ -26,10 +30,11 @@ var conf = {
     images: ['src/images/**/*.{png,svg}', '!src/images/icons/**'],
     icons: 'src/images/icons/*.png',
     html: 'src/*.html',
+    js: 'src/js/**/*.js',
     sprite: {
         imgName: 'images/build/sprite.png',
         cssName: 'less/build/sprite.less',
-        imgPath: '../images/build/sprite.png'
+        imgPath: '../../images/build/sprite.png'
     },
     build: {
         tmpFolders: '**/build',
@@ -41,6 +46,48 @@ var conf = {
     }
 };
 
+var webpackConfig = {
+    entry: './src/js/script.js',
+    output: {
+        filename: 'cdp.js',
+        path: './build/js',
+        sourceMapFilename: '[name].map'
+    },
+    resolve: {
+        modulesDirectories: ['node_modules', 'bower_components']
+    },
+    plugins: [
+        new ExtractTextPlugin('../css/cdp.css', { allChunks: true }),
+        new BowerWebpackPlugin(),
+        new webpack.ProvidePlugin({
+            $: 'jquery',
+            jQuery: 'jquery'
+        })
+    ],
+    module: {
+        loaders: [
+            {
+                test: /\.js$/,
+                loader: 'babel-loader',
+                exclude: 'node_modules',
+                query: {
+                    presets: [ 'es2015' ]
+                }
+            },
+
+
+            { test: /\.less$/,  loader: ExtractTextPlugin.extract('css-loader!less-loader?sourceMap') },
+            { test: /\.css$/,   loader: ExtractTextPlugin.extract('css-loader?sourceMap') },  
+            { test: /\.png$/,   loader: 'file-loader?name=../images/[hash].[ext]' },
+            { test: /\.svg$/,   loader: 'file-loader?name=../images/[hash].[ext]' },
+            { test: /\.ttf$/,   loader: 'file-loader?name=../fonts/[hash].[ext]' },
+            { test: /\.eot$/,   loader: 'file-loader?name=../fonts/[hash].[ext]' },
+            { test: /\.woff$/,  loader: 'file-loader?name=../fonts/[hash].[ext]' },
+            { test: /\.woff2$/, loader: 'file-loader?name=../fonts/[hash].[ext]' }
+        ]
+    }
+};
+
 var bootstrap = {
     less: 'bower_components/bootstrap/less/bootstrap.less'
 };
@@ -48,16 +95,6 @@ var bootstrap = {
 gulp.task('bower', function () {
     return bower()
         .pipe(gulp.dest('bower_components'));
-});
-
-gulp.task('style', ['clean', 'bower', 'images'], function () {
-    return gulp.src([bootstrap.less, conf.less])
-        .pipe(less())
-        .pipe(autoprefixer(['last 2 version']))
-        .pipe(concat('cdp.css'))
-        // Compress code only on production build
-        .pipe(gulpif(argv.env === 'production', csso()))
-        .pipe(gulp.dest(conf.build.css));
 });
 
 gulp.task('style-watch', function () {
@@ -96,20 +133,33 @@ gulp.task('html', ['clean'], function () {
         .pipe(gulp.dest(conf.build.html));
 });
 
-gulp.task('script', ['clean', 'bower'], function () {
-    return gulp.src(mainBowerFiles({includeDev: true}))
-        .pipe(filter('**/*.js'))
-        .pipe(concat('cdp.js'))
-        .pipe(gulpif(argv.env === 'production', uglify()))
-        .pipe(gulp.dest(conf.build.js));
-});
+// gulp.task('script', ['clean', 'bower'], function () {
+//     return gulp.src(mainBowerFiles({includeDev: true}))
+//         .pipe(filter('**/*.js'))
+//         .pipe(concat('cdp.js'))
+//         .pipe(gulpif(argv.env === 'production', uglify()))
+//         .pipe(gulp.dest(conf.build.js));
+// });
 
+// gulp.task('style', ['clean', 'bower', 'images'], function () {
+//     return gulp.src([bootstrap.less, conf.less])
+//         .pipe(less())
+//         .pipe(autoprefixer(['last 2 version']))
+//         .pipe(concat('cdp.css'))
+//         // Compress code only on production build
+//         .pipe(gulpif(argv.env === 'production', csso()))
+//         .pipe(gulp.dest(conf.build.css));
+// });
+
+gulp.task('bundle', ['clean', 'bower', 'images'], function () {
+    return webpack(webpackConfig, function () {});
+});
 
 gulp.task('clean', function () {
     return del([conf.build.folder, conf.build.tmpFolders]);
 });
 
-gulp.task('build', ['style', 'images', 'html', 'script']);
+gulp.task('build', ['html', 'bundle']);
 
 gulp.task('watch', ['build'], function () {
     return gulp.watch(conf.less, ['style-watch']);
