@@ -3,14 +3,11 @@ var BowerWebpackPlugin = require("bower-webpack-plugin");
 var ExtractTextPlugin = require("extract-text-webpack-plugin");
 
 module.exports = {
-    entry: {
-        app: './src/js/script.js',
-        vendor: './bower_components/bootstrap/dist/js/bootstrap.min.js'
-    },
+    entry: './src/js/script.js',
     output: {
         filename: 'cdp.js',
         path: './build/js',
-        sourceMapFilename: '[file].map'
+        sourceMapFilename: '[name].map'
     },
     resolve: {
         modulesDirectories: ['node_modules', 'bower_components']
@@ -34,15 +31,9 @@ module.exports = {
                 }
             },
 
-            {
-                test: /\.less$/,
-                loader: ExtractTextPlugin.extract('css-loader!less-loader?sourceMap')
-            },
-            {
-                test: /\.css$/,
-                loader: ExtractTextPlugin.extract('css-loader?sourceMap')
-            },
 
+            { test: /\.less$/,  loader: ExtractTextPlugin.extract('css-loader!less-loader?sourceMap') },
+            { test: /\.css$/,   loader: ExtractTextPlugin.extract('css-loader?sourceMap') },  
             { test: /\.png$/,   loader: 'file-loader?name=../images/[hash].[ext]' },
             { test: /\.svg$/,   loader: 'file-loader?name=../images/[hash].[ext]' },
             { test: /\.ttf$/,   loader: 'file-loader?name=../fonts/[hash].[ext]' },
@@ -50,6 +41,5 @@ module.exports = {
             { test: /\.woff$/,  loader: 'file-loader?name=../fonts/[hash].[ext]' },
             { test: /\.woff2$/, loader: 'file-loader?name=../fonts/[hash].[ext]' }
         ]
-    },
-    devtool: 'source-map'
+    }
 };

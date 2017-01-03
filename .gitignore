@@ -11,5 +11,4 @@ bower_components
 ### JetBrains folder
 .idea
 
-### Build folders
-build
+webpack.config.js

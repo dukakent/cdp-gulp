@@ -1,4 +1,5 @@
 var gulp = require('gulp');
+var path = require('path');
 var bower = require('gulp-bower');
 var less = require('gulp-less');
 var del = require('del');
@@ -16,9 +17,13 @@ var uglify = require('gulp-uglify');
 var mainBowerFiles = require('main-bower-files');
 var filter = require('gulp-filter');
 
+var eslint = require('gulp-eslint');
+var stylelint = require('gulp-stylelint');
+
 var webpack = require('webpack');
-var BowerWebpackPlugin = require("bower-webpack-plugin");
-var ExtractTextPlugin = require("extract-text-webpack-plugin");
+var BowerWebpackPlugin = require('bower-webpack-plugin');
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
+var WebpackDevServer = require('webpack-dev-server');
 
 var argv = require('minimist')(process.argv.slice(2), {
     string: 'env',
@@ -50,7 +55,7 @@ var webpackConfig = {
     entry: './src/js/script.js',
     output: {
         filename: 'cdp.js',
-        path: './build/js',
+        path: path.resolve('./build/js'),
         sourceMapFilename: '[name].map'
     },
     resolve: {
@@ -88,6 +93,32 @@ var webpackConfig = {
     }
 };
 
+var stylelintConfig = {
+    "rules": {
+        "block-no-empty": null,
+        "color-no-invalid-hex": true,
+        "comment-empty-line-before": [ "always", {
+        "ignore": ["stylelint-commands", "between-comments"]
+        } ],
+        "declaration-colon-space-after": "always",
+        "indentation": ["tab", {
+        "except": ["value"]
+        }],
+        "max-empty-lines": 2,
+        "rule-nested-empty-line-before": [ "always", {
+        "except": ["first-nested"],
+        "ignore": ["after-comment"]
+        } ],
+        "unit-whitelist": ["em", "rem", "%", "s"]
+    },
+
+    reporters: [
+        { formatter: 'string', console: true }
+    ]
+};
+
+var compiler = webpack(webpackConfig);
+
 var bootstrap = {
     less: 'bower_components/bootstrap/less/bootstrap.less'
 };
@@ -95,17 +126,6 @@ var bootstrap = {
 gulp.task('bower', function () {
     return bower()
         .pipe(gulp.dest('bower_components'));
-});
-
-gulp.task('style-watch', function () {
-    return gulp.src([bootstrap.less, conf.less])
-        .pipe(cached())
-        .pipe(less())
-        .on('error', errorHandler)
-        .pipe(autoprefixer(['last 2 version']))
-        .pipe(remember())
-        .pipe(concat('cdp.css'))
-        .pipe(gulp.dest(conf.build.css))
 });
 
 gulp.task('images', ['clean', 'bower', 'sprite'], function () {
@@ -133,26 +153,15 @@ gulp.task('html', ['clean'], function () {
         .pipe(gulp.dest(conf.build.html));
 });
 
-// gulp.task('script', ['clean', 'bower'], function () {
-//     return gulp.src(mainBowerFiles({includeDev: true}))
-//         .pipe(filter('**/*.js'))
-//         .pipe(concat('cdp.js'))
-//         .pipe(gulpif(argv.env === 'production', uglify()))
-//         .pipe(gulp.dest(conf.build.js));
-// });
-
-// gulp.task('style', ['clean', 'bower', 'images'], function () {
-//     return gulp.src([bootstrap.less, conf.less])
-//         .pipe(less())
-//         .pipe(autoprefixer(['last 2 version']))
-//         .pipe(concat('cdp.css'))
-//         // Compress code only on production build
-//         .pipe(gulpif(argv.env === 'production', csso()))
-//         .pipe(gulp.dest(conf.build.css));
-// });
-
 gulp.task('bundle', ['clean', 'bower', 'images'], function () {
-    return webpack(webpackConfig, function () {});
+    return compiler.run(function () {});
+});
+
+gulp.task('bundle:prod', ['clean', 'bower', 'images'], function () {
+    webpackConfig.plugins.push(new webpack.optimize.DedupePlugin());
+    webpackConfig.plugins.push(new webpack.optimize.UglifyJsPlugin());
+
+    gulp.run('bundle');
 });
 
 gulp.task('clean', function () {
@@ -160,10 +169,33 @@ gulp.task('clean', function () {
 });
 
 gulp.task('build', ['html', 'bundle']);
+gulp.task('build:prod', ['html', 'bundle:prod']);
 
 gulp.task('watch', ['build'], function () {
     return gulp.watch(conf.less, ['style-watch']);
 });
+
+gulp.task('watch-bundle', function () {
+    return (new WebpackDevServer(compiler)).listen(8080);
+});
+
+gulp.task('lint:scripts', function () {
+    return gulp.src([
+            './src/**/*.js'
+        ])
+        .pipe(eslint())
+        .pipe(eslint.format())
+        .pipe(eslint.failAfterError());
+});
+
+gulp.task('lint:styles', function () {
+    return gulp.src([
+            './src/**/*.css'
+        ])
+        .pipe(stylelint(stylelintConfig));
+});
+
+gulp.task('lint', [ 'lint:scripts', 'lint:styles' ]);
 
 function errorHandler(error) {
     util.log(util.colors.red('Error'), error.message);

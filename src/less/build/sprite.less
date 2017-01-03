@@ -1,0 +1,132 @@
+/*
+LESS variables are information about icon's compiled state, stored under its original file name
+
+.icon-home {
+  width: @icon-home-width;
+}
+
+The large array-like variables contain all information about a single icon
+@icon-home: x y offset_x offset_y width height total_width total_height image_path name;
+
+At the bottom of this section, we provide information about the spritesheet itself
+@spritesheet: width height image @spritesheet-sprites;
+*/
+@advanced-technology-name: 'advanced-technology';
+@advanced-technology-x: 0px;
+@advanced-technology-y: 0px;
+@advanced-technology-offset-x: 0px;
+@advanced-technology-offset-y: 0px;
+@advanced-technology-width: 184px;
+@advanced-technology-height: 112px;
+@advanced-technology-total-width: 416px;
+@advanced-technology-total-height: 232px;
+@advanced-technology-image: '../../images/build/sprite.png';
+@advanced-technology: 0px 0px 0px 0px 184px 112px 416px 232px '../../images/build/sprite.png' 'advanced-technology';
+@agility-name: 'agility';
+@agility-x: 184px;
+@agility-y: 0px;
+@agility-offset-x: -184px;
+@agility-offset-y: 0px;
+@agility-width: 144px;
+@agility-height: 120px;
+@agility-total-width: 416px;
+@agility-total-height: 232px;
+@agility-image: '../../images/build/sprite.png';
+@agility: 184px 0px -184px 0px 144px 120px 416px 232px '../../images/build/sprite.png' 'agility';
+@app-cloud-mgmt-name: 'app-cloud-mgmt';
+@app-cloud-mgmt-x: 328px;
+@app-cloud-mgmt-y: 0px;
+@app-cloud-mgmt-offset-x: -328px;
+@app-cloud-mgmt-offset-y: 0px;
+@app-cloud-mgmt-width: 88px;
+@app-cloud-mgmt-height: 136px;
+@app-cloud-mgmt-total-width: 416px;
+@app-cloud-mgmt-total-height: 232px;
+@app-cloud-mgmt-image: '../../images/build/sprite.png';
+@app-cloud-mgmt: 328px 0px -328px 0px 88px 136px 416px 232px '../../images/build/sprite.png' 'app-cloud-mgmt';
+@business-name: 'business';
+@business-x: 0px;
+@business-y: 112px;
+@business-offset-x: 0px;
+@business-offset-y: -112px;
+@business-width: 160px;
+@business-height: 120px;
+@business-total-width: 416px;
+@business-total-height: 232px;
+@business-image: '../../images/build/sprite.png';
+@business: 0px 112px 0px -112px 160px 120px 416px 232px '../../images/build/sprite.png' 'business';
+@spritesheet-width: 416px;
+@spritesheet-height: 232px;
+@spritesheet-image: '../../images/build/sprite.png';
+@spritesheet-sprites: @advanced-technology @agility @app-cloud-mgmt @business;
+@spritesheet: 416px 232px '../../images/build/sprite.png' @spritesheet-sprites;
+
+/*
+The provided classes are intended to be used with the array-like variables
+
+.icon-home {
+  .sprite-width(@icon-home);
+}
+.icon-email {
+  .sprite(@icon-email);
+}
+
+Example usage in HTML:
+
+`display: block` sprite:
+<div class="icon-home"></div>
+
+To change `display` (e.g. `display: inline-block;`), we suggest using a common CSS class:
+
+// CSS
+.icon {
+  display: inline-block;
+}
+
+// HTML
+<i class="icon icon-home"></i>
+*/
+.sprite-width(@sprite) {
+  width: extract(@sprite, 5);
+}
+
+.sprite-height(@sprite) {
+  height: extract(@sprite, 6);
+}
+
+.sprite-position(@sprite) {
+  @sprite-offset-x: extract(@sprite, 3);
+  @sprite-offset-y: extract(@sprite, 4);
+  background-position: @sprite-offset-x @sprite-offset-y;
+}
+
+.sprite-image(@sprite) {
+  @sprite-image: extract(@sprite, 9);
+  @sprite-image-bare: ~`"@{sprite-image}".slice(1, -1)`;
+  background-image: url(@sprite-image-bare);
+}
+
+.sprite(@sprite) {
+  .sprite-image(@sprite);
+  .sprite-position(@sprite);
+  .sprite-width(@sprite);
+  .sprite-height(@sprite);
+}
+
+/*
+The `.sprites` mixin generates identical output to the CSS template
+  but can be overridden inside of LESS
+
+This must be run when you have at least 2 sprites.
+  If run with a single sprite, then there will be reference errors.
+
+.sprites(@spritesheet-sprites);
+*/
+.sprites(@sprites, @i: 1) when (@i <= length(@sprites)) {
+  @sprite: extract(@sprites, @i);
+  @sprite-name: e(extract(@sprite, 10));
+  .@{sprite-name} {
+    .sprite(@sprite);
+  }
+  .sprites(@sprites, @i + 1);
+}
